@@ -2,11 +2,11 @@ import 'package:sixvalley_delivery_boy/features/language/domain/models/language_
 import 'images.dart';
 
 class AppConstants {
-  static const String companyName = '6valley';
+  static const String companyName = 'JoyPara';
   static const String appName = 'Deliveryman';
   static const String appVersion = '3.10';
   static const String polylineMapKey = 'MAP_KEY';
-  static const String baseUri = 'Your_base_URL_here';
+  static const String baseUri = 'https://joyparabd.com';
   static const String profileUri = '/api/v2/delivery-man/info';
   static const String configUri = '/api/v1/config';
   static const String loginUri = '/api/v2/delivery-man/auth/login';
