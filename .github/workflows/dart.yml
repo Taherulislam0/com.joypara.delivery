@@ -1,4 +1,4 @@
-name: Build JoyPara Delivery App
+name: JoyPara Delivery Source Zip
 
 on:
   push:
@@ -6,72 +6,45 @@ on:
       - main
 
 jobs:
-  build:
-    name: Build and Release APK/AAB/ZIP
+  replace-and-zip:
+    name: Replace & Zip Source Code
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ Checkout code
-      - name: Checkout code
+      # 1️⃣ Checkout repo
+      - name: Checkout repository
         uses: actions/checkout@v3
 
-      # 2️⃣ Setup Java 17
-      - name: Setup Java
-        uses: actions/setup-java@v3
-        with:
-          distribution: 'temurin'
-          java-version: '17'
-
-      # 3️⃣ Setup Flutter
+      # 2️⃣ Setup Flutter
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          channel: 'stable'
+          channel: stable
 
-      # 4️⃣ Fetch dependencies
-      - name: Flutter pub get
+      # 3️⃣ Get dependencies
+      - name: Flutter Pub Get
         run: flutter pub get
 
-      # 5️⃣ Replace App Name
-      - name: Replace App Name
+      # 4️⃣ Replace old package & app name
+      - name: Replace old package & app name
         run: |
-          find lib/ -type f -name "*.dart" -exec sed -i 's/6Valley Delivery/JoyPara Delivery/g' {} +
-          sed -i 's/android:label="6valley delivery"/android:label="JoyPara Delivery"/g' android/app/src/main/AndroidManifest.xml
+          # Replace package name in AndroidManifest
+          find android/app/src/main -type f -name "*.xml" -exec sed -i 's/com.sixamtech.delivery/com.joypara.delivery/g' {} +
 
-      # 6️⃣ Replace Package Name
-      - name: Replace Package Name
+          # Replace app label
+          find android/app/src/main -type f -name "*.xml" -exec sed -i 's/6valley delivery/JoyPara Delivery/g' {} +
+
+          # Replace package name in Dart files (imports)
+          find lib/ -type f -name "*.dart" -exec sed -i 's/com.sixamtech.delivery/com.joypara.delivery/g' {} +
+
+      # 5️⃣ Create ZIP of entire project (excluding build and git)
+      - name: Zip Project
         run: |
-          find android/ -type f -exec sed -i 's/com.sixamtech.delivery/com.joypara.delivery/g' {} +
-          find ios/ -type f -exec sed -i 's/com.sixamtech.delivery/com.joypara.delivery/g' {} +
+          zip -r joypara_source_code.zip . -x "build/*" -x ".git/*" -x ".github/*"
 
-      # 7️⃣ Replace Base URL
-      - name: Replace Base URL
-        run: |
-          find lib/ -type f -name "*.dart" -exec sed -i 's|https://your_domain.com|https://www.joyparabd.com|g' {} +
-
-      # 8️⃣ Build APK
-      - name: Build APK
-        run: flutter build apk --release --split-per-abi
-
-      # 9️⃣ Build AAB
-      - name: Build AAB
-        run: flutter build appbundle --release
-
-      # 🔟 Create ZIP of build outputs
-      - name: Create ZIP of APK/AAB
-        run: |
-          mkdir -p build_outputs
-          cp build/app/outputs/apk/release/*.apk build_outputs/
-          cp build/app/outputs/bundle/release/*.aab build_outputs/
-          zip -r JoyParaDelivery_build.zip build_outputs/
-
-      # 1️⃣1️⃣ Push to GitHub Release
-      - name: Push to Releases
-        uses: ncipollo/release-action@v1
+      # 6️⃣ Upload ZIP as artifact
+      - name: Upload ZIP artifact
+        uses: actions/upload-artifact@v3
         with:
-          artifacts: |
-            build/app/outputs/apk/release/*.apk
-            build/app/outputs/bundle/release/*.aab
-            JoyParaDelivery_build.zip
-          tag: v1.0.0
-          token: ${{ secrets.TOKEN }}
+          name: joypara_source_code
+          path: joypara_source_code.zip
