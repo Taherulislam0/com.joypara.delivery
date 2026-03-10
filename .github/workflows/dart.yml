@@ -32,39 +32,46 @@ jobs:
       - name: Flutter pub get
         run: flutter pub get
 
-      # 5️⃣ Replace App Name, Package Name & Base URL
-      - name: Replace App Name, Package Name & Base URL
+      # 5️⃣ Replace App Name
+      - name: Replace App Name
         run: |
-          # Dart files
           find lib/ -type f -name "*.dart" -exec sed -i 's/6Valley Delivery/JoyPara Delivery/g' {} +
+          sed -i 's/android:label="6valley delivery"/android:label="JoyPara Delivery"/g' android/app/src/main/AndroidManifest.xml
+
+      # 6️⃣ Replace Package Name
+      - name: Replace Package Name
+        run: |
+          find android/ -type f -exec sed -i 's/com.sixamtech.delivery/com.joypara.delivery/g' {} +
+          find ios/ -type f -exec sed -i 's/com.sixamtech.delivery/com.joypara.delivery/g' {} +
+
+      # 7️⃣ Replace Base URL
+      - name: Replace Base URL
+        run: |
           find lib/ -type f -name "*.dart" -exec sed -i 's|https://your_domain.com|https://www.joyparabd.com|g' {} +
 
-          # AndroidManifest.xml
-          sed -i 's/android:label="6valley delivery"/android:label="JoyPara Delivery"/g' android/app/src/main/AndroidManifest.xml
-          sed -i 's/package="com.sixamtech.delivery"/package="com.joypara.delivery"/g' android/app/src/main/AndroidManifest.xml
-
-          # Replace package name in Kotlin files
-          find android/ -type f -name "*.kt" -exec sed -i 's/com.sixamtech.delivery/com.joypara.delivery/g' {} +
-
-      # 6️⃣ Build APK
+      # 8️⃣ Build APK (ignore unsupported platforms)
       - name: Build APK
-        run: flutter build apk --release --split-per-abi
+        run: flutter build apk --release --split-per-abi --no-linux --no-macos --no-windows
 
-      # 7️⃣ Build AAB
+      # 9️⃣ Build AAB
       - name: Build AAB
-        run: flutter build appbundle --release
+        run: flutter build appbundle --release --no-linux --no-macos --no-windows
 
-      # 8️⃣ Create ZIP of the project (optional)
-      - name: Create ZIP
-        run: zip -r build/joypara_delivery.zip . -x "*.git*"
+      # 🔟 Create ZIP of build outputs
+      - name: Create ZIP of APK/AAB
+        run: |
+          mkdir -p build_outputs
+          cp build/app/outputs/apk/release/*.apk build_outputs/
+          cp build/app/outputs/bundle/release/*.aab build_outputs/
+          zip -r JoyParaDelivery_build.zip build_outputs/
 
-      # 9️⃣ Push to GitHub Release
+      # 1️⃣1️⃣ Push to GitHub Release
       - name: Push to Releases
         uses: ncipollo/release-action@v1
         with:
           artifacts: |
             build/app/outputs/apk/release/*.apk
             build/app/outputs/bundle/release/*.aab
-            build/joypara_delivery.zip
+            JoyParaDelivery_build.zip
           tag: v1.0.0
           token: ${{ secrets.TOKEN }}
