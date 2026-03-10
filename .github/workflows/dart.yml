@@ -1,0 +1,75 @@
+name: Build JoyPara Delivery App
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    name: Build and Release APK/AAB/ZIP
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1️⃣ Checkout code
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # 2️⃣ Setup Java 17
+      - name: Setup Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      # 3️⃣ Setup Flutter
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+
+      # 4️⃣ Fetch dependencies
+      - name: Flutter pub get
+        run: flutter pub get
+
+      # 5️⃣ Replace App Name
+      - name: Replace App Name
+        run: |
+          find lib/ -type f -name "*.dart" -exec sed -i 's/6Valley Delivery/JoyPara Delivery/g' {} +
+          sed -i 's/android:label="6valley delivery"/android:label="JoyPara Delivery"/g' android/app/src/main/AndroidManifest.xml
+          sed -i 's/android:value="6valley_delivery"/android:value="joypara_delivery"/g' android/app/src/main/res/values/strings.xml
+
+      # 6️⃣ Replace Package Name
+      - name: Replace Package Name
+        run: |
+          find android/ -type f -exec sed -i 's/com.sixamtech.delivery/com.joypara.delivery/g' {} +
+          find ios/ -type f -exec sed -i 's/com.sixamtech.delivery/com.joypara.delivery/g' {} +
+
+      # 7️⃣ Replace Base URL (যদি Dart file এ থাকে)
+      - name: Replace Base URL
+        run: |
+          find lib/ -type f -name "*.dart" -exec sed -i 's|https://your_domain.com|https://www.joyparabd.com|g' {} +
+
+      # 8️⃣ Build APK
+      - name: Build APK
+        run: flutter build apk --release --split-per-abi
+
+      # 9️⃣ Build AAB
+      - name: Build AAB
+        run: flutter build appbundle --release
+
+      # 🔟 Create ZIP of project
+      - name: Create ZIP of updated source
+        run: |
+          zip -r JoyParaDelivery_updated.zip . -x ".git/*"
+
+      # 1️⃣1️⃣ Push to GitHub Release
+      - name: Push to Releases
+        uses: ncipollo/release-action@v1
+        with:
+          artifacts: |
+            build/app/outputs/apk/release/*.apk
+            build/app/outputs/bundle/release/*.aab
+            JoyParaDelivery_updated.zip
+          tag: v1.0.1
+          token: ${{ secrets.TOKEN }}
